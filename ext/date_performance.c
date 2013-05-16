@@ -13,7 +13,6 @@
 #define FLOAT(a) (float)a
 
 static VALUE rb_cDate;      /* class Date */
-static VALUE rb_cRational;  /* class Rational */
 
 static ID id_subtract;      /* :- */
 static ID id_add;           /* :+ */
@@ -250,8 +249,8 @@ rb_date_strftime(int argc, VALUE * argv, VALUE self)
   VALUE format = (argc > 0 ? *argv : DEFAULT_FORMAT);
   VALUE civil = rb_date_civil(self);
 
-  char  * pf = RSTRING(format)->ptr;
-  VALUE * pc = RARRAY(civil)->ptr;
+  char  * pf = RSTRING_PTR(format);
+  VALUE * pc = RARRAY_PTR(civil);
   int ic[3];
 
   ic[0] = FIX2INT(pc[0]);
@@ -265,23 +264,21 @@ rb_date_strftime(int argc, VALUE * argv, VALUE self)
      && pf[6] == '%' && pf[7] == 'd' && pf[8] == 0) )
   {
     VALUE buf = rb_str_buf_new(11);
-    char  * pb = RSTRING(buf)->ptr;
-    RSTRING(buf)->len = 
-      sprintf(pb, "%04d-%02d-%02d", ic[0], ic[1], ic[2]);
+    char  * pb = RSTRING_PTR(buf);
     return buf;
   }
  
   /* Use libc's strftime but only for Date class */
   if ( RBASIC(self)->klass == rb_cDate ){
     VALUE buf = rb_str_buf_new(128);
-    char  * pb = RSTRING(buf)->ptr;
+    char  * pb = RSTRING_PTR(buf);
     struct tm t;
     bzero(&t, sizeof(struct tm));
     t.tm_year = ic[0] - 1900;
     t.tm_mon  = ic[1] - 1;
     t.tm_mday = ic[2];
     mktime(&t);  /* fill in missing items (tm_wday, tm_yday) */
-    if ( (RSTRING(buf)->len = strftime(pb, 128, pf, &t)) > 0 )
+    if ( strftime(pb, 128, pf, &t) > 0 )
       return buf;
   }
 
@@ -301,8 +298,8 @@ rb_date_strptime(int argc, VALUE * argv, VALUE self)
   VALUE str = (argc > 0 ? argv[0] : rb_str_new2("-4712-01-01")),
         fmt = (argc > 1 ? argv[1] : DEFAULT_FORMAT),
         sg  = (argc > 2 ? argv[2] : ITALY);
-  char * ps = RSTRING(str)->ptr;
-  char * pf = RSTRING(fmt)->ptr;
+  char * ps = RSTRING_PTR(str);
+  char * pf = RSTRING_PTR(fmt);
   VALUE parts[4];
 
   /* fast path default format */
@@ -350,7 +347,7 @@ rb_date_compare(int argc, VALUE * argv, VALUE self)
   long other_den = -1;
   long other_num = -1;
   if (FIXNUM_P(argv[0])) {
-    //compare with argument as with astronomical julian day number
+    /* compare with argument as with astronomical julian day number */
     other_den = 1;
     other_num = FIX2LONG(argv[0]);
   } else if (rb_obj_is_kind_of(argv[0], rb_cDate)) {
